@@ -27,8 +27,8 @@ LSM303::LSM303(void)
   for your particular unit. The Heading example demonstrates how to
   adjust these values in your own sketch.
   */
-  m_min = (LSM303::vector<int16_t>){-32767, -32767, -32767};
-  m_max = (LSM303::vector<int16_t>){+32767, +32767, +32767};
+  M_min = (LSM303::vector<int16_t>){-32767, -32767, -32767};
+  M_max = (LSM303::vector<int16_t>){+32767, +32767, +32767};
 
   _device = device_auto;
 
@@ -404,9 +404,16 @@ void LSM303::readAcc(void)
   // combine high and low bytes
   // This no longer drops the lowest 4 bits of the readings from the DLH/DLM/DLHC, which are always 0
   // (12-bit resolution, left-aligned). The D has 16-bit resolution
-  a.x = (int16_t)(xha << 8 | xla);
-  a.y = (int16_t)(yha << 8 | yla);
-  a.z = (int16_t)(zha << 8 | zla);
+  A.x = (int16_t)(xha << 8 | xla);
+  A.y = (int16_t)(yha << 8 | yla);
+  A.z = (int16_t)(zha << 8 | zla);
+}
+
+//shifts the A vector four places right to match sensor data
+void LSM303::shift_accel(void) {
+	A.x = A.x >> 4;
+	A.y = A.y >> 4;
+	A.z = A.z >> 4;
 }
 
 // Reads the 3 magnetometer channels and stores them in vector m
@@ -465,9 +472,9 @@ void LSM303::readMag(void)
   }
 
   // combine high and low bytes
-  m.x = (int16_t)(xhm << 8 | xlm);
-  m.y = (int16_t)(yhm << 8 | ylm);
-  m.z = (int16_t)(zhm << 8 | zlm);
+  M.x = (int16_t)(xhm << 8 | xlm);
+  M.y = (int16_t)(yhm << 8 | ylm);
+  M.z = (int16_t)(zhm << 8 | zlm);
 }
 
 // Reads all 6 channels of the LSM303 and stores them in the object variables
@@ -513,19 +520,19 @@ and horizontal north is returned.
 */
 template <typename T> float LSM303::heading(vector<T> from)
 {
-    vector<int32_t> temp_m = {m.x, m.y, m.z};
+    vector<int32_t> temp_m = {M.x, M.y, M.z};
 
     // subtract offset (average of min and max) from magnetometer readings
-    temp_m.x -= ((int32_t)m_min.x + m_max.x) / 2;
-    temp_m.y -= ((int32_t)m_min.y + m_max.y) / 2;
-    temp_m.z -= ((int32_t)m_min.z + m_max.z) / 2;
+    temp_m.x -= ((int32_t)M_min.x + M_max.x) / 2;
+    temp_m.y -= ((int32_t)M_min.y + M_max.y) / 2;
+    temp_m.z -= ((int32_t)M_min.z + M_max.z) / 2;
 
     // compute E and N
     vector<float> E;
     vector<float> N;
-    vector_cross(&temp_m, &a, &E);
+    vector_cross(&temp_m, &A, &E);
     vector_normalize(&E);
-    vector_cross(&a, &E, &N);
+    vector_cross(&A, &E, &N);
     vector_normalize(&N);
 
     // compute heading
@@ -541,10 +548,6 @@ template <typename Ta, typename Tb, typename To> void LSM303::vector_cross(const
   out->z = (a->x * b->y) - (a->y * b->x);
 }
 
-template <typename Ta, typename Tb> float LSM303::vector_dot(const vector<Ta> *a, const vector<Tb> *b)
-{
-  return (a->x * b->x) + (a->y * b->y) + (a->z * b->z);
-}
 
 void LSM303::vector_normalize(vector<float> *a)
 {
@@ -552,6 +555,24 @@ void LSM303::vector_normalize(vector<float> *a)
   a->x /= mag;
   a->y /= mag;
   a->z /= mag;
+}
+
+void LSM303::vector_normalize(vector<int>* a) {
+	vector<float> temp;
+	temp.x = (float)a->x;
+	temp.y = (float)a->y;
+	temp.z = (float)a->z;
+	
+	Serial.print("before normalizing temp is: ");
+	vector_print(temp);	
+	LSM303::vector_normalize(&temp);
+	
+	Serial.print("AFTER normalizing temp is: ");
+	vector_print(temp);	
+	
+	a->x = (int)temp.x;
+	a->y = (int)temp.y;
+	a->z = (int)temp.z;
 }
 
 // Private Methods //////////////////////////////////////////////////////////////
@@ -568,3 +589,4 @@ int LSM303::testReg(byte address, regAddr reg)
   else
     return TEST_REG_NACK;
 }
+
