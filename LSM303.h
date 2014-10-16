@@ -251,11 +251,11 @@ inline
 void vector_print(const LSM303::vector<T>& a) 
 {
 	Serial.print("{x:");
-	Serial.print(a.x);
+	Serial.print(a.x,4);
 	Serial.print(", y:");
-	Serial.print(a.y);
+	Serial.print(a.y,4);
 	Serial.print(", z:");
-	Serial.print(a.z);
+	Serial.print(a.z,4);
 	Serial.println("}");
 }
 
