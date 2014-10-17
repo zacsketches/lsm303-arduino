@@ -2,15 +2,13 @@
 #define LSM303_h
 
 #include <Arduino.h> // for byte data type
+#include <Wire.h>
+
+#include <clearinghouse.h>
 
 class LSM303
 {
   public:
-    template <typename T> struct vector
-    {
-      T x, y, z;
-	  
-    };
 
     enum deviceType { device_DLH, device_DLM, device_DLHC, device_D, device_auto };
     enum sa0State { sa0_low, sa0_high, sa0_auto };
@@ -161,10 +159,10 @@ class LSM303
       D_OUT_Z_H_M       = 0x0D
     };
 
-    vector<int16_t> A; // accelerometer readings
-    vector<int16_t> M; // magnetometer readings
-    vector<int16_t> M_max; // maximum magnetometer values, used for calibration
-    vector<int16_t> M_min; // minimum magnetometer values, used for calibration
+    gw::vector<int16_t> A; // accelerometer readings
+    gw::vector<int16_t> M; // magnetometer readings
+    gw::vector<int16_t> M_max; // maximum magnetometer values, used for calibration
+    gw::vector<int16_t> M_min; // minimum magnetometer values, used for calibration
 
     byte last_status; // status of last I2C transmission
 
@@ -193,13 +191,7 @@ class LSM303
     bool timeoutOccurred(void);
 
     float heading(void);
-    template <typename T> float heading(vector<T> from);
-
-    // vector functions
-    template <typename Ta, typename Tb, typename To> static void vector_cross(const vector<Ta> *a, const vector<Tb> *b, vector<To> *out);
-
-	static void vector_normalize(vector<float> *a);
-	static void vector_normalize(vector<int>* a);
+    template <typename T> float heading(gw::vector<T> from);
 
   private:
     deviceType _device; // chip type (DLH, DLM, or DLHC)
@@ -215,49 +207,7 @@ class LSM303
     int testReg(byte address, regAddr reg);
 };
 
-template <typename Ta, typename Tb> 
-inline
-float vector_dot(const LSM303::vector<Ta> *a, const LSM303::vector<Tb> *b)
-{
-  return (a->x * b->x) + (a->y * b->y) + (a->z * b->z);
-}
 
-template <typename Ta, typename Tb, typename Tr> 
-inline 
-void vector_add(const LSM303::vector<Ta>* a, const LSM303::vector<Tb>* b, LSM303::vector<Tr>* result){
-    result->x = a->x + b->x;
-    result->y = a->y + b->y;
-    result->z = a->z + b->z;	  
-}
-
-template <typename Ta, typename Tb> 
-inline 
-void vector_add(LSM303::vector<Ta>* a, const LSM303::vector<Tb>* b){
-    a->x = a->x + b->x;
-    a->y = a->y + b->y;
-    a->z = a->z + b->z;	  
-}
-
-template <typename T>
-inline
-void vector_scale(LSM303::vector<T>& a, float scalar){
-	a.x = a.x * scalar;
-	a.y = a.y * scalar;
-	a.z = a.z * scalar;
-}
-
-template <typename T>
-inline
-void vector_print(const LSM303::vector<T>& a) 
-{
-	Serial.print("{x:");
-	Serial.print(a.x,4);
-	Serial.print(", y:");
-	Serial.print(a.y,4);
-	Serial.print(", z:");
-	Serial.print(a.z,4);
-	Serial.println("}");
-}
 
 
 

@@ -1,6 +1,6 @@
 #include <LSM303.h>
-#include <Wire.h>
-#include <math.h>
+//#include <Wire.h>
+//#include <math.h>
 
 // Defines ////////////////////////////////////////////////////////////////
 
@@ -27,8 +27,8 @@ LSM303::LSM303(void)
   for your particular unit. The Heading example demonstrates how to
   adjust these values in your own sketch.
   */
-  M_min = (LSM303::vector<int16_t>){-32767, -32767, -32767};
-  M_max = (LSM303::vector<int16_t>){+32767, +32767, +32767};
+  M_min = (gw::vector<int16_t>){-32767, -32767, -32767};
+  M_max = (gw::vector<int16_t>){+32767, +32767, +32767};
 
   _device = device_auto;
 
@@ -497,11 +497,11 @@ float LSM303::heading(void)
 {
   if (_device == device_D)
   {
-    return heading((vector<int>){1, 0, 0});
+    return heading((gw::vector<int>){1, 0, 0});
   }
   else
   {
-    return heading((vector<int>){0, -1, 0});
+    return heading((gw::vector<int>){0, -1, 0});
   }
 }
 
@@ -518,9 +518,9 @@ form a basis for the horizontal plane. The From vector is projected
 into the horizontal plane and the angle between the projected vector
 and horizontal north is returned.
 */
-template <typename T> float LSM303::heading(vector<T> from)
+template <typename T> float LSM303::heading(gw::vector<T> from)
 {
-    vector<int32_t> temp_m = {M.x, M.y, M.z};
+    gw::vector<int32_t> temp_m = {M.x, M.y, M.z};
 
     // subtract offset (average of min and max) from magnetometer readings
     temp_m.x -= ((int32_t)M_min.x + M_max.x) / 2;
@@ -528,8 +528,8 @@ template <typename T> float LSM303::heading(vector<T> from)
     temp_m.z -= ((int32_t)M_min.z + M_max.z) / 2;
 
     // compute E and N
-    vector<float> E;
-    vector<float> N;
+    gw::vector<float> E;
+    gw::vector<float> N;
     vector_cross(&temp_m, &A, &E);
     vector_normalize(&E);
     vector_cross(&A, &E, &N);
@@ -539,40 +539,6 @@ template <typename T> float LSM303::heading(vector<T> from)
     float heading = atan2(vector_dot(&E, &from), vector_dot(&N, &from)) * 180 / M_PI;
     if (heading < 0) heading += 360;
     return heading;
-}
-
-template <typename Ta, typename Tb, typename To> void LSM303::vector_cross(const vector<Ta> *a,const vector<Tb> *b, vector<To> *out)
-{
-  out->x = (a->y * b->z) - (a->z * b->y);
-  out->y = (a->z * b->x) - (a->x * b->z);
-  out->z = (a->x * b->y) - (a->y * b->x);
-}
-
-
-void LSM303::vector_normalize(vector<float> *a)
-{
-  float mag = sqrt(vector_dot(a, a));
-  a->x /= mag;
-  a->y /= mag;
-  a->z /= mag;
-}
-
-void LSM303::vector_normalize(vector<int>* a) {
-	vector<float> temp;
-	temp.x = (float)a->x;
-	temp.y = (float)a->y;
-	temp.z = (float)a->z;
-	
-	Serial.print("before normalizing temp is: ");
-	vector_print(temp);	
-	LSM303::vector_normalize(&temp);
-	
-	Serial.print("AFTER normalizing temp is: ");
-	vector_print(temp);	
-	
-	a->x = (int)temp.x;
-	a->y = (int)temp.y;
-	a->z = (int)temp.z;
 }
 
 // Private Methods //////////////////////////////////////////////////////////////
