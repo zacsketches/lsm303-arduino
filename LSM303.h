@@ -2,9 +2,9 @@
 #define LSM303_h
 
 #include <Arduino.h> // for byte data type
+#include <clearinghouse.h>
 #include <Wire.h>
 
-#include <clearinghouse.h>
 
 class LSM303
 {
