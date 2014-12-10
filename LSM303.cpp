@@ -41,7 +41,7 @@ LSM303::LSM303(I2C_port::port p)
   */
   wire = &Wire;   //Object Wire is provided in wire.h
   #if WIRE_INTERFACES_COUNT > 1
-	if(p = I2C_port::secondary) {
+	if(p == I2C_port::secondary) {
 		wire = &Wire1;	//Object Wire1 is provided in wire.h
 	}
   #endif
