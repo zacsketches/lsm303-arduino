@@ -19,7 +19,7 @@
 
 // Constructors ////////////////////////////////////////////////////////////////
 
-LSM303::LSM303(void)
+LSM303::LSM303(I2C_port::port p)
 {
   /*
   These values lead to an assumed magnetometer bias of 0.
@@ -34,6 +34,18 @@ LSM303::LSM303(void)
 
   io_timeout = 0;  // 0 = no timeout
   did_timeout = false;
+  
+  /* 
+	 Configure the I2C_port to work with either Wire or Wire1
+	 on the Arduino Due
+  */
+  wire = &Wire;   //Object Wire is provided in wire.h
+  #if WIRE_INTERFACES_COUNT > 1
+	if(p = I2C_port::secondary) {
+		wire = &Wire1;	//Object Wire1 is provided in wire.h
+	}
+  #endif
+  
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
@@ -294,10 +306,10 @@ void LSM303::enableDefault(void)
 // Writes an accelerometer register
 void LSM303::writeAccReg(regAddr reg, byte value)
 {
-  Wire.beginTransmission(acc_address);
-  Wire.write((byte)reg);
-  Wire.write(value);
-  last_status = Wire.endTransmission();
+  wire->beginTransmission(acc_address);
+  wire->write((byte)reg);
+  wire->write(value);
+  last_status = wire->endTransmission();
 }
 
 // Reads an accelerometer register
@@ -305,12 +317,12 @@ byte LSM303::readAccReg(regAddr reg)
 {
   byte value;
 
-  Wire.beginTransmission(acc_address);
-  Wire.write((byte)reg);
-  last_status = Wire.endTransmission();
-  Wire.requestFrom(acc_address, (byte)1);
-  value = Wire.read();
-  Wire.endTransmission();
+  wire->beginTransmission(acc_address);
+  wire->write((byte)reg);
+  last_status = wire->endTransmission();
+  wire->requestFrom(acc_address, (byte)1);
+  value = wire->read();
+  wire->endTransmission();
 
   return value;
 }
@@ -318,10 +330,10 @@ byte LSM303::readAccReg(regAddr reg)
 // Writes a magnetometer register
 void LSM303::writeMagReg(regAddr reg, byte value)
 {
-  Wire.beginTransmission(mag_address);
-  Wire.write((byte)reg);
-  Wire.write(value);
-  last_status = Wire.endTransmission();
+  wire->beginTransmission(mag_address);
+  wire->write((byte)reg);
+  wire->write(value);
+  last_status = wire->endTransmission();
 }
 
 // Reads a magnetometer register
@@ -335,12 +347,12 @@ byte LSM303::readMagReg(regAddr reg)
     reg = translated_regs[-reg];
   }
 
-  Wire.beginTransmission(mag_address);
-  Wire.write((byte)reg);
-  last_status = Wire.endTransmission();
-  Wire.requestFrom(mag_address, (byte)1);
-  value = Wire.read();
-  Wire.endTransmission();
+  wire->beginTransmission(mag_address);
+  wire->write((byte)reg);
+  last_status = wire->endTransmission();
+  wire->requestFrom(mag_address, (byte)1);
+  value = wire->read();
+  wire->endTransmission();
 
   return value;
 }
@@ -378,15 +390,15 @@ byte LSM303::readReg(regAddr reg)
 // Reads the 3 accelerometer channels and stores them in vector a
 void LSM303::readAcc(void)
 {
-  Wire.beginTransmission(acc_address);
+  wire->beginTransmission(acc_address);
   // assert the MSB of the address to get the accelerometer
   // to do slave-transmit subaddress updating.
-  Wire.write(OUT_X_L_A | (1 << 7));
-  last_status = Wire.endTransmission();
-  Wire.requestFrom(acc_address, (byte)6);
+  wire->write(OUT_X_L_A | (1 << 7));
+  last_status = wire->endTransmission();
+  wire->requestFrom(acc_address, (byte)6);
 
   unsigned int millis_start = millis();
-  while (Wire.available() < 6) {
+  while (wire->available() < 6) {
     if (io_timeout > 0 && ((unsigned int)millis() - millis_start) > io_timeout)
     {
       did_timeout = true;
@@ -394,12 +406,12 @@ void LSM303::readAcc(void)
     }
   }
 
-  byte xla = Wire.read();
-  byte xha = Wire.read();
-  byte yla = Wire.read();
-  byte yha = Wire.read();
-  byte zla = Wire.read();
-  byte zha = Wire.read();
+  byte xla = wire->read();
+  byte xha = wire->read();
+  byte yla = wire->read();
+  byte yha = wire->read();
+  byte zla = wire->read();
+  byte zha = wire->read();
 
   // combine high and low bytes
   // This no longer drops the lowest 4 bits of the readings from the DLH/DLM/DLHC, which are always 0
@@ -419,15 +431,15 @@ void LSM303::shift_accel(void) {
 // Reads the 3 magnetometer channels and stores them in vector m
 void LSM303::readMag(void)
 {
-  Wire.beginTransmission(mag_address);
+  wire->beginTransmission(mag_address);
   // If LSM303D, assert MSB to enable subaddress updating
   // OUT_X_L_M comes first on D, OUT_X_H_M on others
-  Wire.write((_device == device_D) ? translated_regs[-OUT_X_L_M] | (1 << 7) : translated_regs[-OUT_X_H_M]);
-  last_status = Wire.endTransmission();
-  Wire.requestFrom(mag_address, (byte)6);
+  wire->write((_device == device_D) ? translated_regs[-OUT_X_L_M] | (1 << 7) : translated_regs[-OUT_X_H_M]);
+  last_status = wire->endTransmission();
+  wire->requestFrom(mag_address, (byte)6);
 
   unsigned int millis_start = millis();
-  while (Wire.available() < 6) {
+  while (wire->available() < 6) {
     if (io_timeout > 0 && ((unsigned int)millis() - millis_start) > io_timeout)
     {
       did_timeout = true;
@@ -440,34 +452,34 @@ void LSM303::readMag(void)
   if (_device == device_D)
   {
     /// D: X_L, X_H, Y_L, Y_H, Z_L, Z_H
-    xlm = Wire.read();
-    xhm = Wire.read();
-    ylm = Wire.read();
-    yhm = Wire.read();
-    zlm = Wire.read();
-    zhm = Wire.read();
+    xlm = wire->read();
+    xhm = wire->read();
+    ylm = wire->read();
+    yhm = wire->read();
+    zlm = wire->read();
+    zhm = wire->read();
   }
   else
   {
     // DLHC, DLM, DLH: X_H, X_L...
-    xhm = Wire.read();
-    xlm = Wire.read();
+    xhm = wire->read();
+    xlm = wire->read();
 
     if (_device == device_DLH)
     {
       // DLH: ...Y_H, Y_L, Z_H, Z_L
-      yhm = Wire.read();
-      ylm = Wire.read();
-      zhm = Wire.read();
-      zlm = Wire.read();
+      yhm = wire->read();
+      ylm = wire->read();
+      zhm = wire->read();
+      zlm = wire->read();
     }
     else
     {
       // DLM, DLHC: ...Z_H, Z_L, Y_H, Y_L
-      zhm = Wire.read();
-      zlm = Wire.read();
-      yhm = Wire.read();
-      ylm = Wire.read();
+      zhm = wire->read();
+      zlm = wire->read();
+      yhm = wire->read();
+      ylm = wire->read();
     }
   }
 
@@ -579,13 +591,13 @@ void LSM303::vector_normalize(vector<int>* a) {
 
 int LSM303::testReg(byte address, regAddr reg)
 {
-  Wire.beginTransmission(address);
-  Wire.write((byte)reg);
-  last_status = Wire.endTransmission();
+  wire->beginTransmission(address);
+  wire->write((byte)reg);
+  last_status = wire->endTransmission();
 
-  Wire.requestFrom(address, (byte)1);
-  if (Wire.available())
-    return Wire.read();
+  wire->requestFrom(address, (byte)1);
+  if (wire->available())
+    return wire->read();
   else
     return TEST_REG_NACK;
 }

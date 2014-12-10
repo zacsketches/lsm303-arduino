@@ -1,7 +1,31 @@
 #ifndef LSM303_h
 #define LSM303_h
 
-#include <Arduino.h> // for byte data type
+#include <Arduino.h>
+#include <Wire.h>
+
+/*  Edit by Zac Staples zacskethes(at)github.com
+
+	Major adaptation began on 9 Dec to allow configuration of the
+	I2C port used by the LSM303.
+	
+	On the Arduino Due there are two potential I2C ports,
+	Wire and Wire1.  All the original function calls in the Pololu
+	provided example rely on using the Wire port.  
+	
+	This adaptation allows the use of the Due specific Wire1 port
+	by calling functions via a pointer configured in the LSM303
+	constructor.
+	
+	The new constructor for an LSM303 object is
+		LSM303(I2C_port::Port p = I2C_port::primary);
+		
+	The default I2C_port::primary argument selects the normal I2C
+	port on Arduino Uno and pins 20/21 on the Due.  Configuring
+	the constructor to use I2C_port::secondary will configure the 
+	LSM303 to use the SDA/SCL pins near the AREF pin on Arduino
+	Due.
+*/
 
 class LSM303
 {
@@ -168,7 +192,15 @@ class LSM303
 
     byte last_status; // status of last I2C transmission
 
-    LSM303(void);
+	//Enum to select port
+	//primary selects I2C0 on Due pins 20 & 21
+	//secondary select I2C1 on the Due near the AREF pin
+	struct I2C_port {
+		enum port{primary, secondary};
+	};
+	
+	//Constructor
+    LSM303(I2C_port::port p = I2C_port::primary);
 
     bool init(deviceType device = device_auto, sa0State sa0 = sa0_auto);
     byte getDeviceType(void) { return _device; }
@@ -202,6 +234,7 @@ class LSM303
 	static void vector_normalize(vector<int>* a);
 
   private:
+	TwoWire* wire;
     deviceType _device; // chip type (DLH, DLM, or DLHC)
     byte acc_address;
     byte mag_address;
