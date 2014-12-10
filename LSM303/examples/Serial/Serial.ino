@@ -24,12 +24,26 @@ bits gives a 12-bit raw value of -1009. The LA_So specification in the
 LSM303DLH datasheet (page 11) states a conversion factor of 1 mg/digit
 at this FS setting, so the value of -1009 corresponds to -1009 * 1 =
 1009 mg = 1.009 g.
+
+Edited in Dec 2014 by Zac Staples, zacsketches@github.com
+	My edit to the example sketch uses modifications in the LSM303
+	library to allow use both I2C ports on the Arduino Due.  
+	
+	The primary Due port is on pins 20/21.  The secondary Due port
+	are the SDA1/SCL1 pins next to the AREF pin.
+
+	To select the port use the I2C_port enum from the LSM303 library.
+		enum I2C_port {primary, secondary};
+	
+	By default port behaviour on the Arduino Uno is not affected
+	in this modification.
 */
 
 #include <Wire.h>
 #include <LSM303.h>
 
 LSM303 compass;
+//LSM303 compass(LSM303::I2C_port::secondary);
 
 char report[80];
 
@@ -37,6 +51,7 @@ void setup()
 {
   Serial.begin(115200);
   Wire.begin();
+//  Wire1.begin();
   compass.init();
   compass.enableDefault();
 }
